@@ -1,0 +1,35 @@
+% Yohannes Azeze
+% LMMSE Constrained Wiener Filter & Covariance Constrained Weiner Filter
+% 11/14/2018
+
+clear all;
+clc;
+
+I = imread('Sample.jpg');
+I = double(I);
+n = 20.*rand(size(I));      %Generate noise
+h = fspecial('motion',21,11);    %PSF
+B = imfilter(I,h,'circular');   %Generate Blurred image
+BN = B+n;                       %Generate blurred and noisy image
+
+NSR = sum(n(:).^2)/sum(I(:).^2);    %noise to power ratio
+WF = deconvwnr(BN,h,NSR);           %LMMSE Wiener Filtered
+
+
+
+np = abs(fftn(n)).^2;               %noise power spectrum
+Avg_np = sum(np(:))/prod(size(I));  
+n_corr = fftshift(real(ifftn(np))); %Noise Covariance
+Ip = abs(fftn(I)).^2;
+Avg_Ip = sum(Ip(:))/prod(size(I));
+I_corr = fftshift(real(ifftn(Ip))); %Image Covariance
+NSR2 = Avg_np./Avg_Ip;
+
+C_WF = deconvwnr(BN,h,n_corr,I_corr);   %Covariance Constrained Wiener Filter
+
+
+%Plot
+subplot(2,2,1), imshow(uint8(I));title('Original Image')
+subplot(2,2,2), imshow(BN,[min(min(BN)) max(max(BN))]);title('Blurred & Noisy Image')
+subplot(2,2,3), imshow(WF,[min(min(WF)) max(max(WF))]);title('LMMSE Weiner Filtered')
+subplot(2,2,4), imshow(C_WF,[min(min(C_WF)) max(max(C_WF))]);title('Covar constrained Weiner Filtered')
