@@ -1,0 +1,39 @@
+% Yohannes Azeze
+% SVD Filter
+% 11/17/2017
+
+
+clear all;
+clc;
+
+I= imread('Sample.jpg');
+If = fft2(I);
+If = fftshift(If);
+[x,y] = size(I);
+[X Y] = meshgrid(1:x,1:y);
+h = exp(-(X-x/2).^2./48).* exp(-(Y-y/2).^2./48);
+
+
+H = psf2otf(h,size(h));                           %Get TF for PSF
+H = fftshift(H);
+g = ifft2(If.*H); 
+g = abs(g);
+G = fft2(g);
+G = fftshift(G);
+
+[U S V] = svd(h); % SVD filter
+B = V*pinv(S)*U';
+f = ifft2(B.*G);
+f= abs(f);
+
+n = imnoise(g,'gaussian',0,0.002);  %Add process noise to blurred image
+N = fft2(n);
+N = fftshift(N);
+J = ifft2(B.*N);
+J = abs(J);
+
+%Plot
+subplot(2,2,1), imshow(I);title('Original Image')
+subplot(2,2,2), imshow(g,[min(min(g)) max(max(g))]);title('Blurred Image')
+subplot(2,2,3), imshow(f,[min(min(f)) max(max(f))]);title('SVD Filtered Blur Image');
+subplot(2,2,4), imshow(J,[min(min(J)) max(max(J))]);title('Fully SVD Filtered Image');
