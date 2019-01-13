@@ -1,0 +1,47 @@
+% Yohannes Azeze
+% Inverse Filter
+% 11/13/2018
+
+clear all;
+clc;
+
+I = imread('Sample.jpg');
+If = fft2(I);
+If = fftshift(If);
+[x,y] = size(I);
+[X Y] = meshgrid(1:x,1:y);
+h = exp(-(X-x/2).^2./48).* exp(-(Y-y/2).^2./48); %Construct Gaussian PSF
+H = psf2otf(h,size(h));%Get TF for PSF
+H = fftshift(H);    
+g = ifft2(If.*H);   %Genearate blurred image through Fourier transform
+g = abs(g);
+
+
+G = fft2(g);
+G = fftshift(G);
+
+i = find(H>1e-6);   %Only take values greater than a predterined threshold
+F = zeros(size(G));
+F(i) = G(i)./H(i);  %inverse filtering
+f = ifft2(F);
+f= abs(f);          % Inverse fourier to get estimated (filtered) image
+
+n = imnoise(g,'gaussian',0,0.002);  %Add process noise to blurred image
+N = fft2(n);
+N = fftshift(N);
+i = find(H>1e-6);   %only take values greater than a predetermined threshold
+Fn = zeros(size(N));
+Fn(i) = N(i)./H(i);  %inverse filtering
+fn = ifft2(Fn);
+fn= abs(fn);          % Inverse fourier to get estimated (fully filtered) image
+
+
+
+%Plot
+subplot(2,2,1), imshow(I);title('Original Image')
+subplot(2,2,2), imshow(g,[min(min(g)) max(max(g))]);title('Blurred Image')
+subplot(2,2,3), imshow(f,[min(min(f)) max(max(f))]);axis square; axis tight; axis off; title('Only Blurr Filtered')
+subplot(2,2,4), imshow(fn,[min(min(fn)) max(max(fn))]);title('Fully Filtered Image');
+
+
+
