@@ -1,0 +1,47 @@
+% Yohannes Azeze
+% Constrained Least Square (Norm & Laplacian)
+% 11/17/2017
+
+
+clear all;
+clc;
+
+I = imread('Sample.jpg');
+If = fft2(I);
+If = fftshift(If);
+[x,y] = size(I);
+[X Y] = meshgrid(1:x,1:y);                          
+h = exp(-(X-x/2).^2./20).* exp(-(Y-y/2).^2./20);    %Construct Gaussian PSF
+H = psf2otf(h,size(h));                             %Get TF for PSF
+H = fftshift(H);    
+g = ifft2(If.*H);                                   %Genearate blurred image through Fourier transform
+g = abs(g);
+n = 0.01;                                           %Generate noise
+BN =imnoise(mat2gray(g),'gaussian',0,n);            %Generate blurred and noisy image
+
+
+Bn = fft2(BN);                                      %Fourier Trans. of Blurred and noisy image
+B = fftshift(Bn);
+Lk= [-1,-1,-1;-1,8,-1;-1,-1,-1]/8;                  %Creating Laplacian Kernel
+Lk = fft2(Lk);                                        
+Lk = fftshift(Lk);
+
+L = norm(Lk);
+Hn= norm(H);
+C = Hn^2+ (10)*(L^2);
+A = conj(H);                                        % Take Conjugate of the PSF           
+Y = A/C;
+f = Y.*B;                                           % Estimated image in the frequency domain
+F = ifft2(f);
+J=  abs(F);                                         % Laplacian Constrained LS Filter
+
+C= Hn^2;                                            %inverse Lagrange multiplier set to zero
+A = conj(H);                                        % Take Conjugate of the PSF           
+Y = A/C;
+f_n = Y.*B;                                         % Estimated image in the frequency domain
+F_n = ifft2(f_n);
+f_n=  abs(F_n);                                     % Norm Constrained LS Filter
+                         
+subplot(2,2,1), imshow(BN,[min(min(BN)) max(max(BN))]);title('Blurred & Noisy Image')
+subplot(2,2,2), imshow(J,[min(min(J)) max(max(J))]);title('Laplacian Constrained Filtered')
+subplot(2,2,3),imshow(f_n,[min(min(f_n)) max(max(f_n))]);title('Norm Constrained Filtered')
